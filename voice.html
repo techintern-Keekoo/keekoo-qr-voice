@@ -5,12 +5,12 @@
 <style>
 :root{--bg:#faf7f2;--card:#fff;--ink:#1f1f1f;--mute:#6b6b6b;--line:#e8e2d8;--brand:#ef5a24;--green:#2e9e5b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
-header{background:var(--brand);color:#fff;padding:16px}header h1{margin:0;font-size:20px}header .sub{font-size:13px;opacity:.9}
-main{max-width:480px;margin:0 auto;padding:20px 16px;text-align:center}
-.mic{width:120px;height:120px;border-radius:50%;border:0;background:var(--brand);color:#fff;font-size:44px;margin:12px auto;display:block;box-shadow:0 6px 20px rgba(239,90,36,.35)}
+header{background:var(--brand);color:#fff;padding:12px 16px}header h1{margin:0;font-size:17px}header .sub{font-size:13px;opacity:.9}
+main{max-width:420px;margin:0 auto;padding:14px 16px;text-align:center}
+.mic{width:72px;height:72px;border-radius:50%;border:0;background:var(--brand);color:#fff;font-size:28px;margin:8px auto;display:block;box-shadow:0 4px 12px rgba(239,90,36,.3)}
 .mic.rec{background:#c62828;animation:p 1s infinite}@keyframes p{50%{transform:scale(1.06)}}
-.t{font-size:28px;font-weight:700;margin:6px 0}.msg{color:var(--mute);font-size:14px;min-height:20px}
-.btn{width:100%;margin-top:12px;background:var(--brand);color:#fff;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700}
+.t{font-size:18px;font-weight:700;margin:2px 0}.msg{color:var(--mute);font-size:14px;min-height:20px}
+.btn{width:100%;margin-top:10px;background:var(--brand);color:#fff;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}.btn:disabled{opacity:.5}
 audio{width:100%;margin-top:14px}.ok{color:var(--green);font-weight:700;font-size:18px}.err{color:#c62828}
 </style></head><body>
@@ -28,7 +28,7 @@ audio{width:100%;margin-top:14px}.ok{color:var(--green);font-weight:700;font-siz
   <div class="msg" id="msg"></div>
 </div>
 <div id="done" style="display:none">
-  <div style="font-size:48px">✅</div>
+  <div style="font-size:32px">✅</div>
   <div class="ok">Voice note saved</div>
   <p>Go back to the menu tab and tap <b>Place Order</b>.<br>The kitchen hears it with your order.</p>
 </div>
