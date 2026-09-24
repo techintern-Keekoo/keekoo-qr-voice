@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voice note for kitchen</title>
+<style>
+:root{--bg:#faf7f2;--card:#fff;--ink:#1f1f1f;--mute:#6b6b6b;--line:#e8e2d8;--brand:#ef5a24;--green:#2e9e5b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
+header{background:var(--brand);color:#fff;padding:16px}header h1{margin:0;font-size:20px}header .sub{font-size:13px;opacity:.9}
+main{max-width:480px;margin:0 auto;padding:20px 16px;text-align:center}
+.mic{width:120px;height:120px;border-radius:50%;border:0;background:var(--brand);color:#fff;font-size:44px;margin:12px auto;display:block;box-shadow:0 6px 20px rgba(239,90,36,.35)}
+.mic.rec{background:#c62828;animation:p 1s infinite}@keyframes p{50%{transform:scale(1.06)}}
+.t{font-size:28px;font-weight:700;margin:6px 0}.msg{color:var(--mute);font-size:14px;min-height:20px}
+.btn{width:100%;margin-top:12px;background:var(--brand);color:#fff;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}.btn:disabled{opacity:.5}
+audio{width:100%;margin-top:14px}.ok{color:var(--green);font-weight:700;font-size:18px}.err{color:#c62828}
+</style></head><body>
+<header><h1>Voice note for the kitchen</h1><div class="sub" id="roomTag"></div></header>
+<main>
+<div id="rec">
+  <div class="msg" id="hint">Tap the mic and speak (up to 60 seconds)</div>
+  <button class="mic" id="mic" aria-label="Record">🎤</button>
+  <div class="t" id="time">0:00</div>
+  <div id="review" style="display:none">
+    <audio id="play" controls></audio>
+    <button class="btn" id="send">Send to kitchen</button>
+    <button class="btn ghost" id="again">Record again</button>
+  </div>
+  <div class="msg" id="msg"></div>
+</div>
+<div id="done" style="display:none">
+  <div style="font-size:48px">✅</div>
+  <div class="ok">Voice note saved</div>
+  <p>Go back to the menu tab and tap <b>Place Order</b>.<br>The kitchen hears it with your order.</p>
+</div>
+</main>
+<script>
+// Apps Script web app (/exec) that stores the audio. Same deployment as the QR menu.
+const API = 'https://script.google.com/macros/s/AKfycbzEEPwyQK2GU2_QaPstoUzwXfIPn-L5BtRnsKV1UwmwZO7nUdjjYZ53y3GTFschaJYNhA/exec';
+const MAX_SEC = 60;
+const qs = new URLSearchParams(location.search);
+const TOKEN = (qs.get('t') || '').replace(/[^A-Za-z0-9]/g, '');
+const ROOM = (qs.get('r') || '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 8);
+const $ = s => document.querySelector(s);
+let rec = null, chunks = [], blob = null, mime = '', timer = null, sec = 0, stream = null;
+
+$('#roomTag').textContent = ROOM ? 'Room ' + ROOM : '';
+if (!TOKEN || !ROOM) { fail('Please open this from the room menu (tap the 🎤 button in your order).'); $('#mic').disabled = true; }
+else if (!navigator.mediaDevices || !window.MediaRecorder) { fail('This browser cannot record audio. Please type your note in the menu instead.'); $('#mic').disabled = true; }
+
+function fail(t) { $('#msg').className = 'msg err'; $('#msg').textContent = t; }
+function info(t) { $('#msg').className = 'msg'; $('#msg').textContent = t; }
+function fmt(s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function pickMime() {
+  const c = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'];
+  for (const m of c) if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) return m;
+  return '';
+}
+
+$('#mic').onclick = async () => {
+  if (rec && rec.state === 'recording') { rec.stop(); return; }
+  info('');
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { fail('Microphone blocked. Allow microphone access for this site in your browser settings, then try again.'); return; }
+  mime = pickMime();
+  try { rec = mime ? new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 32000 }) : new MediaRecorder(stream); }
+  catch (e) { rec = new MediaRecorder(stream); }
+  chunks = []; sec = 0; $('#time').textContent = '0:00'; $('#review').style.display = 'none';
+  rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  rec.onstop = () => {
+    clearInterval(timer); stream.getTracks().forEach(t => t.stop());
+    $('#mic').classList.remove('rec'); $('#mic').textContent = '🎤'; $('#hint').textContent = 'Listen, then send it — or record again';
+    mime = (rec.mimeType || mime || 'audio/webm');
+    blob = new Blob(chunks, { type: mime });
+    if (!blob.size || sec < 1) { fail('Too short. Please hold on a little longer and speak.'); return; }
+    $('#play').src = URL.createObjectURL(blob); $('#review').style.display = 'block';
+  };
+  rec.start(1000);
+  $('#mic').classList.add('rec'); $('#mic').textContent = '■'; $('#hint').textContent = 'Recording… tap to stop';
+  timer = setInterval(() => { sec++; $('#time').textContent = fmt(sec); if (sec >= MAX_SEC) rec.stop(); }, 1000);
+};
+
+$('#again').onclick = () => { $('#review').style.display = 'none'; $('#time').textContent = '0:00'; $('#hint').textContent = 'Tap the mic and speak (up to 60 seconds)'; info(''); };
+
+$('#send').onclick = async () => {
+  const b = $('#send'); b.disabled = true; b.textContent = 'Sending…'; info('');
+  try {
+    const b64 = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] || ''); r.onerror = no; r.readAsDataURL(blob); });
+    const res = await fetch(API, { method: 'POST', body: JSON.stringify({ api: 'voice', token: TOKEN, room: ROOM, mime: mime, seconds: sec, b64: b64 }) });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || 'Could not save');
+    $('#rec').style.display = 'none'; $('#done').style.display = 'block';
+  } catch (e) {
+    b.disabled = false; b.textContent = 'Send to kitchen';
+    fail('Could not send: ' + (e.message || e) + '. Please try again.');
+  }
+};
+</script></body></html>
