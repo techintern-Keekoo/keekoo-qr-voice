@@ -18,6 +18,7 @@ h2{font-size:17px;margin:20px 0 8px;color:var(--brand)}
 .item{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
 .item .info{flex:1;min-width:0}.item .n{font-weight:600}.item .p{font-weight:700;margin-top:2px}
 .add{border:1.5px solid var(--brand);color:var(--brand);background:transparent;font-weight:700;border-radius:8px;padding:6px 16px}
+.item.off{opacity:.55}.item .offt{font-size:12px;color:var(--mute);margin-top:2px}.add:disabled{border-color:var(--mute);color:var(--mute);cursor:not-allowed}
 .qty{display:flex;align-items:center;border:1.5px solid var(--brand);border-radius:8px;overflow:hidden}
 .qty button{border:0;background:var(--brand);color:#fff;width:30px;height:32px;font-size:18px}.qty span{min-width:28px;text-align:center;font-weight:700}
 .cartbar{position:fixed;left:12px;right:12px;bottom:12px;max-width:696px;margin:0 auto;background:var(--green);color:#fff;border-radius:14px;padding:12px 16px;display:none;justify-content:space-between;align-items:center;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.25);border:0;font-size:15px;width:calc(100% - 24px)}
@@ -54,15 +55,16 @@ const $=s=>document.querySelector(s);const cart={};const rs=n=>'₹'+Number(n).t
 const esc=s=>String(s).replace(/[<>"']/g,'');
 const ROOM=esc(new URLSearchParams(location.search).get('room')||'').slice(0,8);
 function showRoom(){$('#roomTag').textContent=ROOM?'Room '+ROOM:'Please scan the QR code in your room'}showRoom();
-function buildAll(){all=[];MENU.forEach((c,ci)=>c.items.forEach((it,ii)=>all.push({id:ci+'-'+ii,cat:c.cat,name:it[0],price:it[1]})));}
+function hrs(s){if(!s)return '';return s.split('-').map(t=>{let[H,M]=t.split(':').map(Number);const ap=H>=12?'PM':'AM';H=H%12||12;return H+(M?':'+String(M).padStart(2,'0'):'')+' '+ap}).join(' – ')}
+function buildAll(){all=[];MENU.forEach((c,ci)=>c.items.forEach((it,ii)=>all.push({id:ci+'-'+ii,cat:c.cat,name:it[0],price:it[1],open:it[2]!==false,hours:hrs(it[3])})));}
 function render(){const q=$('#q').value.trim().toLowerCase();let h='';
 MENU.forEach((c,ci)=>{const its=all.filter(i=>i.cat===c.cat&&(!q||i.name.toLowerCase().includes(q)));if(!its.length||(!q&&ci!==CUR))return;
-h+='<h2 id="c-'+ci+'">'+esc(c.cat)+'</h2>';
+h+='<h2 id="c-'+ci+'">'+esc(c.cat)+(String(c.cat).trim().toUpperCase()==='BREAKFAST'&&its[0].hours?' · '+esc(its[0].hours):'')+'</h2>';
 its.forEach(it=>{const n=cart[it.id]?cart[it.id].qty:0;
-h+='<div class="item"><div class="info"><div class="n">'+esc(it.name)+'</div><div class="p">'+rs(it.price)+'</div></div>'+
-(n?'<div class="qty"><button data-m="'+it.id+'">−</button><span>'+n+'</span><button data-p="'+it.id+'">+</button></div>':'<button class="add" data-p="'+it.id+'">ADD</button>')+'</div>'});});
+h+='<div class="item'+(it.open?'':' off')+'"><div class="info"><div class="n">'+esc(it.name)+'</div><div class="p">'+rs(it.price)+'</div>'+(it.open?'':'<div class="offt">Available '+esc(it.hours)+'</div>')+'</div>'+
+(!it.open?'<button class="add" disabled>ADD</button>':n?'<div class="qty"><button data-m="'+it.id+'">−</button><span>'+n+'</span><button data-p="'+it.id+'">+</button></div>':'<button class="add" data-p="'+it.id+'">ADD</button>')+'</div>'});});
 $('#list').innerHTML=h||'<div class="empty">No dish found</div>';bar();}
-function change(id,d){const it=all.find(i=>i.id===id);if(!it)return;if(!cart[id])cart[id]={name:it.name,price:it.price,qty:0};
+function change(id,d){const it=all.find(i=>i.id===id);if(!it||(d>0&&!it.open))return;if(!cart[id])cart[id]={name:it.name,price:it.price,qty:0};
 cart[id].qty+=d;if(cart[id].qty<=0)delete cart[id];render();if($('#sheet').style.display==='flex')openCart();}
 function totals(){let c=0,t=0;for(const k in cart){c+=cart[k].qty;t+=cart[k].qty*cart[k].price}return{c,t}}
 function bar(){const{c,t}=totals();$('#cartbar').style.display=c?'flex':'none';$('#cb1').textContent=c+' item'+(c>1?'s':'')+' · '+rs(t);}
@@ -138,7 +140,7 @@ api({api:'login',name:n,phone:p,room:ROOM}).then(()=>{try{localStorage.setItem(G
 if(!getGuest())$('#login').style.display='flex';
 
 $('#list').innerHTML='<div class="empty">Loading menu…</div>';
-function loadMenu(rows){const by={};const order=[];(rows||[]).forEach(r=>{if(!r.name||!(r.price>0))return;const c=r.category||'Other';if(!by[c]){by[c]=[];order.push(c)}by[c].push([r.name,r.price])});
+function loadMenu(rows){const by={};const order=[];(rows||[]).forEach(r=>{if(!r.name||!(r.price>0))return;const c=r.category||'Other';if(!by[c]){by[c]=[];order.push(c)}by[c].push([r.name,r.price,r.open!==false,r.hours||''])});
 MENU=order.map(c=>({cat:c,items:by[c]}));buildAll();drawTabs();render();}
-api({api:'menu'}).then(j=>loadMenu(j.menu)).catch(()=>{$('#list').innerHTML='<div class="empty">Menu could not load. Please call reception.</div>'});
+api({api:'menuTimed'}).catch(()=>api({api:'menu'})).then(j=>loadMenu(j.menu)).catch(()=>{$('#list').innerHTML='<div class="empty">Menu could not load. Please call reception.</div>'});
 </script></body></html>
