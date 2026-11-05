@@ -2,47 +2,89 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Room Service Menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Plus+Jakarta+Sans:wght@400..800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#faf7f2;--card:#fff;--ink:#1f1f1f;--mute:#6b6b6b;--line:#ece6dc;--brand:#ef5a24;--green:#3a9b3a}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:90px}
-header{background:var(--brand);color:#fff;padding:16px 16px 12px}
-header h1{margin:0;font-size:22px}header .sub{font-size:13px;opacity:.9}
-.room{display:inline-block;margin-top:6px;background:rgba(0,0,0,.2);padding:2px 10px;border-radius:99px;font-size:13px;font-weight:600}
-.bar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
-.search{padding:10px 16px 6px}.search input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:15px}
-.tabs{display:flex;gap:8px;overflow-x:auto;padding:6px 16px 10px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
-.tabs button{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:6px 12px;font-size:13px}
-.tabs button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+/* Zen Manali tokens (see QR Menu Design Guide) */
+:root{--navy:#0D1B2E;--navy2:#13243B;--gold:#C8A15A;--gold-l:#E9D6AE;--gold-ink:#7A5A1C;--gold50:#F7EFDF;--bg:#F5F6F9;--card:#fff;--ink:#0E1A2B;--mute:#6B7686;--line:#E6E9EF;--green:#0B6B2E;--green-bg:#E8F6EC;--red:#A12424;--red-bg:#FDECEC;--sh:0 2px 12px rgba(14,26,43,.07);--serif:Fraunces,Georgia,serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:96px}
+button{font:inherit;cursor:pointer;transition:transform .15s}button:active:not(:disabled){transform:scale(.97)}
+header{position:relative;overflow:hidden;background:linear-gradient(160deg,var(--navy),var(--navy2));color:#fff;padding:22px 18px 34px;border-radius:0 0 28px 28px}
+header>*{position:relative;z-index:1;max-width:720px;margin-left:auto;margin-right:auto}
+.brand{font-size:12px;font-weight:600;letter-spacing:.2em;color:var(--gold-l)}
+header h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.1;margin:8px auto 14px}
+header h1 em{font-weight:500;font-size:32px;color:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:6px 12px;border-radius:99px;font-size:13px;font-weight:600}
+header .mtn{position:absolute;left:0;right:0;bottom:0;width:100%;height:46px;max-width:none;z-index:0}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);padding-top:12px}
+.search{max-width:720px;margin:0 auto;padding:0 16px 10px}
+.search input{width:100%;height:48px;padding:0 16px;border:0;border-radius:14px;background:var(--card);box-shadow:var(--sh);color:var(--ink);font:inherit;font-size:16px}
+.tabs{display:flex;gap:8px;overflow-x:auto;max-width:720px;margin:0 auto;padding:2px 16px 12px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;min-height:44px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:0 18px;font-size:12px;font-weight:700;letter-spacing:.12em}
+.tabs button.on{background:linear-gradient(160deg,var(--navy),var(--navy2));border-color:var(--navy);color:var(--gold-l);box-shadow:0 6px 14px -8px rgba(13,27,46,.6)}
 main{max-width:720px;margin:0 auto;padding:0 16px}
-h2{font-size:17px;margin:20px 0 8px;color:var(--brand)}
-.item{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
-.item .info{flex:1;min-width:0}.item .n{font-weight:600}.item .p{font-weight:700;margin-top:2px}
-.add{border:1.5px solid var(--brand);color:var(--brand);background:transparent;font-weight:700;border-radius:8px;padding:6px 16px}
-.item.off{opacity:.55}.item .offt{font-size:12px;color:var(--mute);margin-top:2px}.add:disabled{border-color:var(--mute);color:var(--mute);cursor:not-allowed}
-.qty{display:flex;align-items:center;border:1.5px solid var(--brand);border-radius:8px;overflow:hidden}
-.qty button{border:0;background:var(--brand);color:#fff;width:30px;height:32px;font-size:18px}.qty span{min-width:28px;text-align:center;font-weight:700}
-.cartbar{position:fixed;left:12px;right:12px;bottom:12px;max-width:696px;margin:0 auto;background:var(--green);color:#fff;border-radius:14px;padding:12px 16px;display:none;justify-content:space-between;align-items:center;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.25);border:0;font-size:15px;width:calc(100% - 24px)}
-.sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:10;align-items:flex-start}
-.sheet .box{background:var(--card);width:100%;max-width:720px;margin:0 auto;border-radius:0 0 16px 16px;padding:16px;max-height:100%;overflow:auto}
-.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
-.row .l{flex:1}.tot{display:flex;justify-content:space-between;font-size:18px;font-weight:800;margin-top:12px}
-textarea{width:100%;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}
-.btn{width:100%;margin-top:12px;background:var(--brand);color:#fff;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700}
-.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}.btn:disabled{opacity:.6}
-.note{font-size:12px;color:var(--mute);margin-top:8px;text-align:center}.empty{color:var(--mute);text-align:center;padding:30px}
-.login{position:fixed;inset:0;background:var(--bg);z-index:20;display:none;align-items:center;justify-content:center;padding:16px}.lbox{background:var(--card);width:100%;max-width:420px;border-radius:16px;padding:20px;box-shadow:0 6px 20px rgba(0,0,0,.12)}.lbox input{width:100%;margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:16px}
+h2{font-family:var(--serif);font-weight:600;font-size:20px;letter-spacing:.04em;color:var(--navy);margin:16px 0 12px;display:flex;align-items:center;gap:12px}h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
+.item{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:16px;padding:14px 14px 14px 16px;margin-bottom:10px;box-shadow:var(--sh)}
+.item .info{flex:1;min-width:0}.item .n{font-weight:700}.item .p{font-weight:700;margin-top:4px}
+.add{min-width:88px;height:44px;border:1px solid var(--line);background:var(--card);color:var(--green);font-weight:800;letter-spacing:.04em;border-radius:12px;box-shadow:var(--sh)}
+.item.off{opacity:.55}.item .offt{font-size:13px;color:var(--mute);margin-top:2px}.add:disabled{color:var(--mute);cursor:not-allowed}
+.qty{display:flex;align-items:center;background:var(--navy);color:#fff;border-radius:12px;overflow:hidden;height:44px}
+.qty button{border:0;background:transparent;color:#fff;width:38px;height:44px;font-size:20px}.qty span{min-width:22px;text-align:center;font-weight:700}
+.cartbar{position:fixed;left:12px;right:12px;bottom:12px;max-width:696px;width:calc(100% - 24px);margin:0 auto;height:64px;background:linear-gradient(160deg,var(--navy),var(--navy2));color:#fff;border:0;border-radius:20px;padding:0 16px 0 12px;display:none;justify-content:space-between;align-items:center;box-shadow:0 12px 28px -8px rgba(13,27,46,.55)}
+.cbl{display:flex;align-items:center;gap:10px;text-align:left}.cbl b{display:block;font-size:16px}.cbl small{display:block;font-size:12px;color:var(--gold-l)}
+.badge{min-width:38px;height:38px;border-radius:12px;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:800}
+.cbgo{font-weight:700;color:var(--gold-l)}
+.sheet{position:fixed;inset:0;background:rgba(14,26,43,.55);display:none;z-index:10;align-items:flex-end}
+.sheet .box{background:var(--card);width:100%;max-width:720px;margin:0 auto;border-radius:28px 28px 0 0;padding:10px 18px calc(18px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto;animation:up .22s ease-out}
+.sheet .box::before{content:"";display:block;width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 14px}
+@keyframes up{from{transform:translateY(24px);opacity:.6}}
+.box h3{font-family:var(--serif);font-weight:600;font-size:22px;margin:0 0 8px}
+.steps{display:flex;gap:6px;margin:0 0 14px}.steps span{flex:1;font-size:12px;font-weight:700;color:var(--mute);border-top:4px solid var(--line);padding-top:6px}.steps span.on{color:var(--navy);border-color:var(--gold)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.row .l{flex:1}.tot{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--serif);font-size:22px;font-weight:600;margin-top:12px}
+.receipt{border:1.5px dashed #CDD3DD;border-radius:16px;padding:4px 14px 14px;margin:4px 0 6px}.receipt .row:last-of-type{border-bottom:0}
+textarea{width:100%;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px}
+.btn{width:100%;min-height:52px;margin-top:12px;background:linear-gradient(160deg,var(--navy),var(--navy2));color:#fff;border:0;border-radius:16px;padding:12px;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}.btn:disabled{opacity:.6}
+.note{font-size:13px;color:var(--mute);margin-top:8px;text-align:center}.empty{color:var(--mute);text-align:center;padding:30px}
+.login{position:fixed;inset:0;background:var(--bg);z-index:20;display:none;align-items:center;justify-content:center;padding:16px}.lbox{background:var(--card);width:100%;max-width:420px;border-radius:20px;padding:22px;box-shadow:0 10px 30px rgba(14,26,43,.12)}.lbox h2{margin:6px 0 4px;font-size:26px;letter-spacing:0}.lbox h2::after{display:none}.lbox input{width:100%;height:48px;margin-top:10px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px}
 .nwrap{position:relative}.nwrap textarea{padding-right:54px}
-.micb{position:absolute;right:6px;bottom:6px;width:40px;height:40px;border-radius:50%;border:0;background:transparent;color:#555;padding:0;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.micb.rec{background:#d32f2f;color:#fff;transform:scale(1.15)}.micb.ok{color:var(--green)}
-.vline{font-size:12px;color:var(--mute);margin-top:4px;min-height:16px;display:flex;align-items:center;gap:10px}
-.vline.rec{color:#d32f2f;font-weight:600}.vline button{border:0;background:transparent;color:var(--brand);font-weight:700;font-size:12px;padding:2px 0}
+.micb{position:absolute;right:6px;bottom:6px;width:44px;height:44px;border-radius:50%;border:0;background:transparent;color:#555;padding:0;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.micb.rec{background:var(--red);color:#fff;transform:scale(1.1)}.micb.ok{color:var(--green)}
+.vline{font-size:13px;color:var(--mute);margin-top:4px;min-height:16px;display:flex;align-items:center;gap:10px}
+.vline.rec{color:var(--red);font-weight:600}.vline button{border:0;background:transparent;color:var(--gold-ink);font-weight:700;font-size:13px;padding:6px 0}
+.res{text-align:center;padding:12px 6px 4px}.res h3{font-size:24px;margin:0 0 6px}.res p{margin:6px 0}
+.ic{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:2px auto 14px}
+.ic.ok{background:var(--green-bg);color:var(--green)}.ic.bad{background:var(--red-bg);color:var(--red)}.ic.wait{background:var(--gold50);color:var(--gold-ink)}
+.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.err{color:var(--red)}
+/* Motion: short (150-250ms), calm, off for "reduce motion" */
+@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+@keyframes fade{from{opacity:0}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes bump{50%{transform:scale(1.18)}}
+@keyframes draw{from{stroke-dashoffset:30}}
+header>*{animation:rise .25s ease-out both}header h1{animation-delay:.05s}.chips{animation-delay:.1s}
+#list.enter h2,#list.enter .item{animation:rise .22s ease-out both;animation-delay:calc(var(--i,0)*30ms)}
+.tabs button{transition:transform .15s,background-color .2s,color .2s,box-shadow .2s}
+.qty.bump span,.badge.bump{animation:bump .2s ease-out}
+.item .qty.new{animation:pop .2s ease-out}
+.cartbar{animation:rise .25s ease-out}
+.sheet{animation:fade .2s ease-out}
+.receipt .row,.receipt .tot{animation:rise .22s ease-out both}.receipt>:nth-child(2){animation-delay:.03s}.receipt>:nth-child(3){animation-delay:.06s}.receipt>:nth-child(4){animation-delay:.09s}.receipt>:nth-child(5){animation-delay:.12s}.receipt>:nth-child(n+6){animation-delay:.15s}
+.res .ic{animation:pop .25s ease-out both}.res .ic svg path{stroke-dasharray:30;animation:draw .25s .12s ease-out both}.res .ic .spin path{stroke-dasharray:none;animation:none}
+.res h3,.res p,.res .btn{animation:rise .22s .1s ease-out both}
+.search input:focus,textarea:focus,.lbox input:focus{outline:2px solid var(--gold);outline-offset:1px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style></head><body>
-<header><h1>Room Service</h1><div class="sub">Order from your room · Please allow ~30 min</div><div class="room" id="roomTag"></div></header>
+<header><div class="brand">ZEN MANALI · BY KEEKOO STAYS</div><h1>In-Room <em>Dining</em></h1><div class="chips"><span class="chip" id="roomTag"></span><span class="chip">Delivered in ~30 min</span></div>
+<svg class="mtn" viewBox="0 0 400 46" preserveAspectRatio="none" aria-hidden="true"><path d="M0 46 L0 30 L48 12 L86 28 L132 4 L178 26 L214 14 L262 32 L306 8 L350 26 L400 16 L400 46Z" fill="rgba(255,255,255,.06)"/><path d="M0 46 L0 38 L60 24 L110 36 L170 20 L230 36 L290 22 L346 36 L400 28 L400 46Z" fill="rgba(200,161,90,.10)"/></svg></header>
 <div class="bar"><div class="search"><input id="q" placeholder="Search dishes…"></div><nav class="tabs" id="tabs"></nav></div>
 <main id="list"></main>
-<button class="cartbar" id="cartbar"><span id="cb1"></span><span>View order →</span></button>
+<button class="cartbar" id="cartbar"><span class="cbl"><span class="badge" id="cbN"></span><span><b id="cbT"></b><small id="cbS"></small></span></span><span class="cbgo">View order →</span></button>
 <div class="sheet" id="sheet"><div class="box" id="box"></div></div>
-<div class="login" id="login"><div class="lbox"><h2 style="margin:0 0 4px">Welcome</h2><div class="note" style="text-align:left;margin:0 0 6px">Please enter your details to order</div><input id="gName" placeholder="Full name" maxlength="60" autocomplete="name"><input id="gPhone" type="tel" placeholder="10-digit mobile number" inputmode="numeric" maxlength="10" autocomplete="tel"><div id="gErr" class="note" style="color:var(--brand)"></div><button class="btn" id="gGo">Continue to menu</button></div></div>
+<div class="login" id="login"><div class="lbox"><div class="brand" style="color:var(--gold-ink)">ZEN MANALI · IN-ROOM DINING</div><h2>Welcome</h2><div class="note" style="text-align:left;margin:0 0 6px">Please enter your details to order</div><input id="gName" placeholder="Full name" maxlength="60" autocomplete="name"><input id="gPhone" type="tel" placeholder="10-digit mobile number" inputmode="numeric" maxlength="10" autocomplete="tel"><div id="gErr" class="note err"></div><button class="btn" id="gGo">Continue to menu</button></div></div>
 <script>
 // Same Apps Script web app as before (menu, login, orders -> KDS, voice notes).
 const API='https://script.google.com/macros/s/AKfycbzEEPwyQK2GU2_QaPstoUzwXfIPn-L5BtRnsKV1UwmwZO7nUdjjYZ53y3GTFschaJYNhA/exec';
@@ -53,6 +95,12 @@ return fetch(API,{method:'POST',body:JSON.stringify(body)}).then(r=>r.json(),e=>
 let MENU=[],all=[],CUR=0;
 const $=s=>document.querySelector(s);const cart={};const rs=n=>'₹'+Number(n).toLocaleString('en-IN');
 const esc=s=>String(s).replace(/[<>"']/g,'');
+// Look only: SVG icons, Order → Bill → Pay steps.
+const SV=d=>'<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
+const ICON={ok:SV('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),bad:SV('<path d="M7 7l10 10M17 7L7 17"/>'),wait:SV('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),spin:'<svg class="spin" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 1-8.5 8.5"/></svg>'};
+const ic=k=>'<div class="ic '+(k==='spin'?'wait':k)+'">'+ICON[k]+'</div>';
+const LOCK='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+const steps=n=>PAY?'<div class="steps">'+['Order','Bill','Pay'].map((s,i)=>'<span'+(i<n?' class="on"':'')+'>'+s+'</span>').join('')+'</div>':'';
 const QS=new URLSearchParams(location.search);
 const ROOM=String(QS.get('room')||'').replace(/[^A-Za-z0-9-]/g,'').slice(0,8);
 const KEY=String(QS.get('k')||'').replace(/[^A-Za-z0-9_-]/g,'').slice(0,16); // optional secret room code
@@ -61,21 +109,22 @@ let PAY=false; // does this room pay before ordering? (server decides: payMode)
 function showRoom(){$('#roomTag').textContent=ROOM?'Room '+ROOM:'Please scan the QR code in your room'}showRoom();
 function hrs(s){if(!s)return '';return s.split('-').map(t=>{let[H,M]=t.split(':').map(Number);const ap=H>=12?'PM':'AM';H=H%12||12;return H+(M?':'+String(M).padStart(2,'0'):'')+' '+ap}).join(' – ')}
 function buildAll(){all=[];MENU.forEach((c,ci)=>c.items.forEach((it,ii)=>all.push({id:ci+'-'+ii,cat:c.cat,name:it[0],price:it[1],open:it[2]!==false,hours:hrs(it[3])})));}
-function render(){const q=$('#q').value.trim().toLowerCase();let h='';
+let VIEW='',BUMP='',NEWQ=false;
+function render(){const q=$('#q').value.trim().toLowerCase();let h='',k=0;const v=CUR+'|'+q+'|'+all.length,enter=v!==VIEW;VIEW=v;
 MENU.forEach((c,ci)=>{const its=all.filter(i=>i.cat===c.cat&&(!q||i.name.toLowerCase().includes(q)));if(!its.length||(!q&&ci!==CUR))return;
 h+='<h2 id="c-'+ci+'">'+esc(c.cat)+(String(c.cat).trim().toUpperCase()==='BREAKFAST'&&its[0].hours?' · '+esc(its[0].hours):'')+'</h2>';
 its.forEach(it=>{const n=cart[it.id]?cart[it.id].qty:0;
-h+='<div class="item'+(it.open?'':' off')+'"><div class="info"><div class="n">'+esc(it.name)+'</div><div class="p">'+rs(it.price)+'</div>'+(it.open?'':'<div class="offt">Available '+esc(it.hours)+'</div>')+'</div>'+
-(!it.open?'<button class="add" disabled>ADD</button>':n?'<div class="qty"><button data-m="'+it.id+'">−</button><span>'+n+'</span><button data-p="'+it.id+'">+</button></div>':'<button class="add" data-p="'+it.id+'">ADD</button>')+'</div>'});});
-$('#list').innerHTML=h||'<div class="empty">No dish found</div>';bar();}
+h+='<div class="item'+(it.open?'':' off')+'" style="--i:'+Math.min(k++,8)+'"><div class="info"><div class="n">'+esc(it.name)+'</div><div class="p">'+rs(it.price)+'</div>'+(it.open?'':'<div class="offt">Available '+esc(it.hours)+'</div>')+'</div>'+
+(!it.open?'<button class="add" disabled>ADD</button>':n?'<div class="qty'+(BUMP===it.id?(NEWQ?' new':' bump'):'')+'"><button data-m="'+it.id+'">−</button><span>'+n+'</span><button data-p="'+it.id+'">+</button></div>':'<button class="add" data-p="'+it.id+'">ADD</button>')+'</div>'});});
+$('#list').classList.toggle('enter',enter);$('#list').innerHTML=h||'<div class="empty">No dish found</div>';BUMP='';bar();}
 function change(id,d){const it=all.find(i=>i.id===id);if(!it||(d>0&&!it.open))return;if(!cart[id])cart[id]={name:it.name,price:it.price,qty:0};
-cart[id].qty+=d;if(cart[id].qty<=0)delete cart[id];render();if($('#sheet').style.display==='flex')openCart();}
+cart[id].qty+=d;if(cart[id].qty<=0)delete cart[id];BUMP=id;NEWQ=d>0&&cart[id]&&cart[id].qty===1;render();if($('#sheet').style.display==='flex')openCart();}
 function totals(){let c=0,t=0;for(const k in cart){c+=cart[k].qty;t+=cart[k].qty*cart[k].price}return{c,t}}
-function bar(){const{c,t}=totals();$('#cartbar').style.display=c?'flex':'none';$('#cb1').textContent=c+' item'+(c>1?'s':'')+' · '+rs(t);}
+function bar(){const{c,t}=totals();$('#cartbar').style.display=c?'flex':'none';const bn=$('#cbN');if(bn.textContent!==String(c)){bn.textContent=c;bn.classList.remove('bump');void bn.offsetWidth;bn.classList.add('bump')}$('#cbT').textContent=rs(t);$('#cbS').textContent=c+' item'+(c>1?'s':'')+(PAY?' · taxes on next step':'');}
 document.addEventListener('click',e=>{const d=e.target.dataset;if(d.p)change(d.p,1);if(d.m)change(d.m,-1);});
 $('#q').oninput=render;
 function drawTabs(){$('#tabs').innerHTML=MENU.map((c,ci)=>'<button data-t="'+ci+'"'+(ci===CUR?' class="on"':'')+'>'+esc(c.cat)+'</button>').join('');}
-$('#tabs').onclick=e=>{const t=e.target.dataset.t;if(t===undefined)return;CUR=+t;$('#q').value='';render();document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b===e.target));
+$('#tabs').onclick=e=>{const t=e.target.dataset.t;if(t===undefined)return;CUR=+t;$('#q').value='';render();document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b===e.target));e.target.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
 window.scrollTo({top:0,behavior:'smooth'})};
 $('#cartbar').onclick=openCart;$('#sheet').onclick=e=>{if(e.target.id==='sheet')closeCart()};
 function closeCart(){$('#sheet').style.display='none'}
@@ -92,9 +141,9 @@ function vLine(){const el=$('#vline');const b=$('#vRec');if(!el||!b)return;
 b.classList.toggle('rec',V.state==='rec');b.classList.toggle('ok',V.state==='ok');el.className='vline'+(V.state==='rec'?' rec':'');
 if(V.state==='rec')el.textContent='● Recording '+fmt(V.sec)+' — speak, then just place your order';
 else if(V.state==='up')el.textContent='Saving voice note…';
-else if(V.state==='ok'){el.innerHTML='✅ Voice note '+fmt(V.sec)+' <button id="vPlay">Play</button><button id="vDel">Remove</button>';$('#vPlay').onclick=()=>new Audio(V.url).play();$('#vDel').onclick=()=>{V={state:'idle',token:'',url:'',sec:0,err:''};upload=null;vLine()};}
+else if(V.state==='ok'){el.innerHTML='Voice note saved · '+fmt(V.sec)+' <button id="vPlay">Play</button><button id="vDel">Remove</button>';$('#vPlay').onclick=()=>new Audio(V.url).play();$('#vDel').onclick=()=>{V={state:'idle',token:'',url:'',sec:0,err:''};upload=null;vLine()};}
 else if(V.state==='err')el.textContent=V.err;
-else el.textContent=CAN_REC?'🎤 Tap once and tell the chef your request (less spicy, no onion…). Then just place your order.':'';}
+else el.textContent=CAN_REC?'Tap the mic and tell the chef your request (less spicy, no onion…). Then just place your order.':'';}
 function micTap(e){e.preventDefault();if(V.state==='rec'){recStop();return}recStart();} // tap 1 = start, tap 2 = stop
 async function recStart(){if(starting||V.state==='rec'||V.state==='up')return;starting=true;
 try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(x){starting=false;V={state:'err',err:'Microphone blocked. Allow it in your browser settings, or type your note.'};vLine();return}
@@ -116,7 +165,7 @@ upload=new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.r
 function vVerify(token,e){let n=0;const chk=()=>api({api:'vstatus',token:token}).then(j=>{if(j.saved)return true;if(++n<3)return new Promise(z=>setTimeout(z,1500)).then(chk);throw e});return chk().catch(()=>{throw e})}
 function bindMic(){const b=$('#vRec');if(!b)return;b.addEventListener('click',micTap);b.oncontextmenu=e=>e.preventDefault();vLine();}
 
-function openCart(){const{c,t}=totals();let h='<h3 style="margin:0 0 6px">Your order'+(ROOM?' · Room '+ROOM:'')+'</h3>';
+function openCart(){const{c,t}=totals();let h=steps(1)+'<h3>Your order'+(ROOM?' · Room '+ROOM:'')+'</h3>';
 for(const k in cart){const x=cart[k];h+='<div class="row"><div class="l">'+esc(x.name)+'<div style="color:var(--mute);font-size:12px">'+rs(x.price)+' each</div></div><div class="qty"><button data-m="'+k+'">−</button><span>'+x.qty+'</span><button data-p="'+k+'">+</button></div><div style="min-width:64px;text-align:right;font-weight:600">'+rs(x.qty*x.price)+'</div></div>'}
 const keep=$('#notes')?$('#notes').value:'';
 h+='<div class="row"><span>Total items</span><b>'+c+'</b></div><div class="tot"><span>'+(PAY?'Food total':'Grand Total')+'</span><span>'+rs(t)+'</span></div>'+
@@ -124,30 +173,30 @@ h+='<div class="row"><span>Total items</span><b>'+c+'</b></div><div class="tot">
 (CAN_REC?'<button class="micb" id="vRec" aria-label="Tap to start or stop a voice note">'+MIC_SVG+'</button>':'')+'</div><div class="vline" id="vline"></div>'+
 (PAY?'<button class="btn" id="place">Pay · see bill with GST</button><button class="btn ghost" id="more">Add more items</button><div class="note">GST is shown on the next screen. Your order goes to the kitchen only after payment.</div>':'<button class="btn" id="place">Place Order · '+rs(t)+'</button><button class="btn ghost" id="more">Add more items</button><div class="note">Taxes, if any, are added on the final bill</div>');
 $('#box').innerHTML=h;$('#notes').value=keep;$('#sheet').style.display='flex';$('#place').onclick=place;$('#more').onclick=closeCart;bindMic();}
-async function place(){const b=$('#place');if(!ROOM){b.insertAdjacentHTML('afterend','<div class="note" style="color:var(--brand)">Please scan the QR code in your room.</div>');return}
+async function place(){const b=$('#place');if(!ROOM){b.insertAdjacentHTML('afterend','<div class="note err">Please scan the QR code in your room.</div>');return}
 if(V.state==='rec'){b.disabled=true;b.textContent='Saving voice note…';await new Promise(ok=>{afterStop=ok;setTimeout(()=>{if(afterStop===ok){afterStop=null;ok()}},8000);recStop()});b.disabled=false}
 const items=Object.values(cart).map(x=>({name:x.name,qty:x.qty}));const notes=$('#notes').value;const{t}=totals();
 b.disabled=true;b.textContent=PAY?'Calculating bill…':'Placing order…';
 let voice='';if(upload&&(V.state==='up'||V.state==='ok'))voice=await upload;
 if(PAY){ // prices + GST come from the server (menu sheet). The page never sends prices.
 api({api:'quote',room:ROOM,k:KEY,items:items}).then(q=>payScreen(q,items,notes,voice))
-.catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note" style="color:var(--brand)">'+esc(err.message)+'</div>')});return}
+.catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note err">'+esc(err.message)+'</div>')});return}
 api({api:'order',room:ROOM,items:items,notes:notes,voice:voice}).then(j=>{const id=j.orderNo;
 for(const k in cart)delete cart[k];V={state:'idle',token:'',url:'',sec:0,err:''};upload=null;render();
-$('#box').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:44px">✅</div><h3>Order placed!</h3><p>Room '+ROOM+' · Order #'+esc(id)+'<br>Grand total '+rs(t)+'</p><p class="note">The kitchen has your order. Please allow about 30 minutes.</p><button class="btn" id="dn">Done</button></div>';$('#dn').onclick=closeCart})
-.catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note" style="color:var(--brand)">'+esc(err.message)+'</div>')});}
+$('#box').innerHTML='<div class="res">'+ic('ok')+'<h3>Order placed!</h3><p>Room '+ROOM+' · Order #'+esc(id)+'<br>Grand total '+rs(t)+'</p><p class="note">The kitchen has your order. Please allow about 30 minutes.</p><button class="btn" id="dn">Done</button></div>';$('#dn').onclick=closeCart})
+.catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note err">'+esc(err.message)+'</div>')});}
 
 // ---- Pay first (PayU). Server signs the payment; the order goes to the kitchen only after PayU confirms. ----
 const rs2=n=>'₹'+Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 function payScreen(q,items,notes,voice){const half=q.gstRate/2;
-let h='<h3 style="margin:0 0 6px">Your bill · Room '+esc(q.room)+'</h3>';
+let h=steps(2)+'<h3>Your bill · Room '+esc(q.room)+'</h3><div class="receipt">';
 q.lines.forEach(l=>{h+='<div class="row"><div class="l">'+esc(l.name)+' × '+l.qty+'</div><div style="font-weight:600">'+rs2(l.amount)+'</div></div>'});
 h+='<div class="row"><span>Food total</span><b>'+rs2(q.food)+'</b></div>'+
 '<div class="row"><span>CGST '+half+'%</span><span>'+rs2(q.cgst)+'</span></div>'+
 '<div class="row"><span>SGST '+half+'%</span><span>'+rs2(q.sgst)+'</span></div>'+
-'<div class="tot"><span>Total to pay</span><span>'+rs2(q.total)+'</span></div>'+
-'<button class="btn" id="payBtn">Proceed to pay '+rs2(q.total)+'</button><button class="btn ghost" id="back">Back</button>'+
-'<div class="note">Secure payment by PayU · UPI, cards, net banking. Your order goes to the kitchen after payment.</div>';
+'<div class="tot"><span>To pay</span><span>'+rs2(q.total)+'</span></div></div>'+
+'<button class="btn" id="payBtn">'+LOCK+'Pay '+rs2(q.total)+' securely</button><div class="note">UPI · Cards · Netbanking via PayU</div><button class="btn ghost" id="back">Back</button>'+
+'<div class="note">Your order goes to the kitchen only after payment.</div>';
 $('#box').innerHTML=h;$('#back').onclick=openCart;
 $('#payBtn').onclick=()=>{const b=$('#payBtn');const g=getGuest()||{};b.disabled=true;b.textContent='Opening payment…';
 api({api:'payStart',room:ROOM,k:KEY,items:items,notes:notes,voice:voice,name:g.name||'',phone:g.phone||''},0).then(j=>{
@@ -156,26 +205,26 @@ try{localStorage.setItem('qrCart',JSON.stringify({room:ROOM,txn:j.txnid,items:Ob
 // Browsers only allow leaving the page on a real tap: show a form button (no auto-submit).
 const f=document.createElement('form');f.method='POST';f.action=j.action;f.target='_top';
 for(const n in j.fields){const i=document.createElement('input');i.type='hidden';i.name=n;i.value=j.fields[n];f.appendChild(i)}
-const s=document.createElement('button');s.type='submit';s.className='btn';s.textContent='Continue to secure payment · '+rs2(j.total);f.appendChild(s);
-b.replaceWith(f);s.focus()})
-.catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note" style="color:var(--brand)">'+esc(err.message)+'</div>')})};}
+const s=document.createElement('button');s.type='submit';s.className='btn';s.innerHTML=LOCK+'Continue to secure payment · '+rs2(j.total);f.appendChild(s);
+b.replaceWith(f);const st=$('#box .steps');if(st)st.outerHTML=steps(3);s.focus()})
+.catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note err">'+esc(err.message)+'</div>')})};}
 // Back from PayU (?txn=...): ask the server (it checks with PayU) until the order is confirmed or failed.
 function payResult(){if(!TXN||!ROOM)return;$('#sheet').style.display='flex';
-$('#box').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:44px">⏳</div><h3>Confirming your payment…</h3><p class="note">Please do not close this page.</p></div>';
+$('#box').innerHTML='<div class="res">'+ic('spin')+'<h3>Confirming your payment…</h3><p class="note">Please do not close this page.</p></div>';
 let n=0;const toMenu=()=>{clearTimeout(window.__back);closeCart();try{history.replaceState(null,'',location.pathname+'?room='+encodeURIComponent(ROOM)+(KEY?'&k='+encodeURIComponent(KEY):''))}catch(e){}};
-const show=(icon,title,body,auto)=>{$('#box').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:44px">'+icon+'</div><h3>'+title+'</h3><p>'+body+'</p>'+(auto?'<p class="note">Going back to the menu…</p>':'')+'<button class="btn" id="dn">Back to menu</button></div>';$('#dn').onclick=toMenu;if(auto)window.__back=setTimeout(toMenu,4000)};
+const show=(icon,title,body,auto,again)=>{$('#box').innerHTML='<div class="res">'+ic(icon)+'<h3>'+title+'</h3><p>'+body+'</p>'+(auto?'<p class="note">Going back to the menu…</p>':'')+(again?'<button class="btn" id="again">Try again</button>':'')+'<button class="btn'+(again?' ghost':'')+'" id="dn">Back to menu</button>'+(again?'<p class="note">Need help? Dial 9 for reception</p>':'')+'</div>';$('#dn').onclick=toMenu;if(again)$('#again').onclick=()=>{toMenu();openCart()};if(auto)window.__back=setTimeout(toMenu,4000)};
 const saved=()=>{try{const c=JSON.parse(localStorage.getItem('qrCart')||'null');return c&&c.room===ROOM&&c.txn===TXN?c:null}catch(e){return null}};
 const refill=()=>{const c=saved();if(!c)return;for(const k in cart)delete cart[k];c.items.forEach(x=>{const it=all.find(i=>i.name===x.name);if(it)cart[it.id]={name:it.name,price:it.price,qty:x.qty}});render()};
 const forget=()=>{try{localStorage.removeItem('qrCart')}catch(e){}};
 const chk=()=>api({api:'payStatus',room:ROOM,k:KEY,txnid:TXN}).then(j=>{
-if(j.status==='ORDERED'){forget();for(const k in cart)delete cart[k];render();return show('✅','Payment successful','Paid '+rs2(j.total)+' (incl. GST)<br>Room '+esc(ROOM)+' · Order #'+esc(j.orderNo)+'<br><span class="note">The kitchen has your order. Please allow about 30 minutes.</span>',true)}
-if(j.status==='CHECK MANUALLY'){forget();return show('🕑','Payment received','Our team will confirm your order shortly. If you do not hear back in 10 minutes, please call reception.',true)}
+if(j.status==='ORDERED'){forget();for(const k in cart)delete cart[k];render();return show('ok','Payment received','Paid '+rs2(j.total)+' (incl. GST)<br>Room '+esc(ROOM)+' · Order #'+esc(j.orderNo)+'<br><span class="note">The kitchen has your order. Please allow about 30 minutes.</span>',true)}
+if(j.status==='CHECK MANUALLY'){forget();return show('wait','Payment received','Our team will confirm your order shortly. If you do not hear back in 10 minutes, please call reception.',true)}
 const why=j.reason?'<br><b>Reason:</b> '+esc(j.reason):'';
-if(j.status==='FAILED'){refill();forget();return show('❌','Payment failed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">You can try again. If money was deducted, your bank returns it automatically. Your items are still in the cart.</span>',true)}
-if(j.status==='EXPIRED'){refill();forget();return show('⏱️','Payment not completed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">Your items are still in the cart. You can try again.</span>',true)}
+if(j.status==='FAILED'){refill();forget();return show('bad','Payment not completed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">If money was deducted, your bank returns it automatically. Your items are still in the cart.</span>',true,true)}
+if(j.status==='EXPIRED'){refill();forget();return show('bad','Payment not completed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">Your items are still in the cart.</span>',true,true)}
 if(++n<40)return new Promise(z=>setTimeout(z,3000)).then(chk);
-show('🕑','Still confirming','Your payment is still being confirmed. Please call reception if your order does not arrive.')})
-.catch(e=>show('⚠️','Could not check payment',esc(e.message)+'<br>Please call reception if your order does not arrive.'));chk();}
+show('wait','Still confirming','Your payment is still being confirmed. Please call reception if your order does not arrive.')})
+.catch(e=>show('wait','Could not check payment',esc(e.message)+'<br>Please call reception if your order does not arrive.'));chk();}
 
 // ---- Guest login (name + phone), once per phone for 24h ----
 const GKEY='qrGuest';
