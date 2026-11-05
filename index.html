@@ -78,7 +78,7 @@ header>*{animation:rise .25s ease-out both}header h1{animation-delay:.05s}.chips
 .search input:focus,textarea:focus,.lbox input:focus{outline:2px solid var(--gold);outline-offset:1px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style></head><body>
-<header><div class="brand">ZEN MANALI · BY KEEKOO STAYS</div><h1>In-Room <em>Dining</em></h1><div class="chips"><span class="chip" id="roomTag"></span><span class="chip">Delivered in ~30 min</span></div>
+<header><div class="brand">ZEN MANALI · BY KEEKOO STAYS</div><h1 id="title">In-Room <em>Dining</em></h1><div class="chips"><span class="chip" id="roomTag"></span><span class="chip" id="eta">Delivered in ~30 min</span></div>
 <svg class="mtn" viewBox="0 0 400 46" preserveAspectRatio="none" aria-hidden="true"><path d="M0 46 L0 30 L48 12 L86 28 L132 4 L178 26 L214 14 L262 32 L306 8 L350 26 L400 16 L400 46Z" fill="rgba(255,255,255,.06)"/><path d="M0 46 L0 38 L60 24 L110 36 L170 20 L230 36 L290 22 L346 36 L400 28 L400 46Z" fill="rgba(200,161,90,.10)"/></svg></header>
 <div class="bar"><div class="search"><input id="q" placeholder="Search dishes…"></div><nav class="tabs" id="tabs"></nav></div>
 <main id="list"></main>
@@ -106,7 +106,8 @@ const ROOM=String(QS.get('room')||'').replace(/[^A-Za-z0-9-]/g,'').slice(0,8);
 const KEY=String(QS.get('k')||'').replace(/[^A-Za-z0-9_-]/g,'').slice(0,16); // optional secret room code
 const TXN=String(QS.get('txn')||'').replace(/[^A-Za-z0-9]/g,'').slice(0,44); // back from PayU
 let PAY=false; // does this room pay before ordering? (server decides: payMode)
-function showRoom(){$('#roomTag').textContent=ROOM?'Room '+ROOM:'Please scan the QR code in your room'}showRoom();
+const PLACE=/^T\d+$/i.test(ROOM)?'Table '+ROOM.toUpperCase():'Room '+ROOM; // restaurant tables use ?room=T1 (same server flow as rooms)
+function showRoom(){$('#roomTag').textContent=ROOM?PLACE:'Please scan the QR code in your room';if(PLACE[0]==='T'){$('#title').innerHTML='Dine-In <em>Menu</em>';$('#eta').textContent='Served at your table'}}showRoom();
 function hrs(s){if(!s)return '';return s.split('-').map(t=>{let[H,M]=t.split(':').map(Number);const ap=H>=12?'PM':'AM';H=H%12||12;return H+(M?':'+String(M).padStart(2,'0'):'')+' '+ap}).join(' – ')}
 function buildAll(){all=[];MENU.forEach((c,ci)=>c.items.forEach((it,ii)=>all.push({id:ci+'-'+ii,cat:c.cat,name:it[0],price:it[1],open:it[2]!==false,hours:hrs(it[3])})));}
 let VIEW='',BUMP='',NEWQ=false;
@@ -165,7 +166,7 @@ upload=new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.r
 function vVerify(token,e){let n=0;const chk=()=>api({api:'vstatus',token:token}).then(j=>{if(j.saved)return true;if(++n<3)return new Promise(z=>setTimeout(z,1500)).then(chk);throw e});return chk().catch(()=>{throw e})}
 function bindMic(){const b=$('#vRec');if(!b)return;b.addEventListener('click',micTap);b.oncontextmenu=e=>e.preventDefault();vLine();}
 
-function openCart(){const{c,t}=totals();let h=steps(1)+'<h3>Your order'+(ROOM?' · Room '+ROOM:'')+'</h3>';
+function openCart(){const{c,t}=totals();let h=steps(1)+'<h3>Your order'+(ROOM?' · '+PLACE:'')+'</h3>';
 for(const k in cart){const x=cart[k];h+='<div class="row"><div class="l">'+esc(x.name)+'<div style="color:var(--mute);font-size:12px">'+rs(x.price)+' each</div></div><div class="qty"><button data-m="'+k+'">−</button><span>'+x.qty+'</span><button data-p="'+k+'">+</button></div><div style="min-width:64px;text-align:right;font-weight:600">'+rs(x.qty*x.price)+'</div></div>'}
 const keep=$('#notes')?$('#notes').value:'';
 h+='<div class="row"><span>Total items</span><b>'+c+'</b></div><div class="tot"><span>'+(PAY?'Food total':'Grand Total')+'</span><span>'+rs(t)+'</span></div>'+
@@ -183,13 +184,13 @@ api({api:'quote',room:ROOM,k:KEY,items:items}).then(q=>payScreen(q,items,notes,v
 .catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note err">'+esc(err.message)+'</div>')});return}
 api({api:'order',room:ROOM,items:items,notes:notes,voice:voice}).then(j=>{const id=j.orderNo;
 for(const k in cart)delete cart[k];V={state:'idle',token:'',url:'',sec:0,err:''};upload=null;render();
-$('#box').innerHTML='<div class="res">'+ic('ok')+'<h3>Order placed!</h3><p>Room '+ROOM+' · Order #'+esc(id)+'<br>Grand total '+rs(t)+'</p><p class="note">The kitchen has your order. Please allow about 30 minutes.</p><button class="btn" id="dn">Done</button></div>';$('#dn').onclick=closeCart})
+$('#box').innerHTML='<div class="res">'+ic('ok')+'<h3>Order placed!</h3><p>'+PLACE+' · Order #'+esc(id)+'<br>Grand total '+rs(t)+'</p><p class="note">The kitchen has your order. Please allow about 30 minutes.</p><button class="btn" id="dn">Done</button></div>';$('#dn').onclick=closeCart})
 .catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note err">'+esc(err.message)+'</div>')});}
 
 // ---- Pay first (PayU). Server signs the payment; the order goes to the kitchen only after PayU confirms. ----
 const rs2=n=>'₹'+Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 function payScreen(q,items,notes,voice){const half=q.gstRate/2;
-let h=steps(2)+'<h3>Your bill · Room '+esc(q.room)+'</h3><div class="receipt">';
+let h=steps(2)+'<h3>Your bill · '+esc(PLACE)+'</h3><div class="receipt">';
 q.lines.forEach(l=>{h+='<div class="row"><div class="l">'+esc(l.name)+' × '+l.qty+'</div><div style="font-weight:600">'+rs2(l.amount)+'</div></div>'});
 h+='<div class="row"><span>Food total</span><b>'+rs2(q.food)+'</b></div>'+
 '<div class="row"><span>CGST '+half+'%</span><span>'+rs2(q.cgst)+'</span></div>'+
@@ -217,7 +218,7 @@ const saved=()=>{try{const c=JSON.parse(localStorage.getItem('qrCart')||'null');
 const refill=()=>{const c=saved();if(!c)return;for(const k in cart)delete cart[k];c.items.forEach(x=>{const it=all.find(i=>i.name===x.name);if(it)cart[it.id]={name:it.name,price:it.price,qty:x.qty}});render()};
 const forget=()=>{try{localStorage.removeItem('qrCart')}catch(e){}};
 const chk=()=>api({api:'payStatus',room:ROOM,k:KEY,txnid:TXN}).then(j=>{
-if(j.status==='ORDERED'){forget();for(const k in cart)delete cart[k];render();return show('ok','Payment received','Paid '+rs2(j.total)+' (incl. GST)<br>Room '+esc(ROOM)+' · Order #'+esc(j.orderNo)+'<br><span class="note">The kitchen has your order. Please allow about 30 minutes.</span>',true)}
+if(j.status==='ORDERED'){forget();for(const k in cart)delete cart[k];render();return show('ok','Payment received','Paid '+rs2(j.total)+' (incl. GST)<br>'+esc(PLACE)+' · Order #'+esc(j.orderNo)+'<br><span class="note">The kitchen has your order. Please allow about 30 minutes.</span>',true)}
 if(j.status==='CHECK MANUALLY'){forget();return show('wait','Payment received','Our team will confirm your order shortly. If you do not hear back in 10 minutes, please call reception.',true)}
 const why=j.reason?'<br><b>Reason:</b> '+esc(j.reason):'';
 if(j.status==='FAILED'){refill();forget();return show('bad','Payment not completed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">If money was deducted, your bank returns it automatically. Your items are still in the cart.</span>',true,true)}
