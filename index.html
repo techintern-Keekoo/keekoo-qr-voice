@@ -53,7 +53,11 @@ return fetch(API,{method:'POST',body:JSON.stringify(body)}).then(r=>r.json(),e=>
 let MENU=[],all=[],CUR=0;
 const $=s=>document.querySelector(s);const cart={};const rs=n=>'₹'+Number(n).toLocaleString('en-IN');
 const esc=s=>String(s).replace(/[<>"']/g,'');
-const ROOM=esc(new URLSearchParams(location.search).get('room')||'').slice(0,8);
+const QS=new URLSearchParams(location.search);
+const ROOM=String(QS.get('room')||'').replace(/[^A-Za-z0-9-]/g,'').slice(0,8);
+const KEY=String(QS.get('k')||'').replace(/[^A-Za-z0-9_-]/g,'').slice(0,16); // optional secret room code
+const TXN=String(QS.get('txn')||'').replace(/[^A-Za-z0-9]/g,'').slice(0,44); // back from PayU
+let PAY=false; // does this room pay before ordering? (server decides: payMode)
 function showRoom(){$('#roomTag').textContent=ROOM?'Room '+ROOM:'Please scan the QR code in your room'}showRoom();
 function hrs(s){if(!s)return '';return s.split('-').map(t=>{let[H,M]=t.split(':').map(Number);const ap=H>=12?'PM':'AM';H=H%12||12;return H+(M?':'+String(M).padStart(2,'0'):'')+' '+ap}).join(' – ')}
 function buildAll(){all=[];MENU.forEach((c,ci)=>c.items.forEach((it,ii)=>all.push({id:ci+'-'+ii,cat:c.cat,name:it[0],price:it[1],open:it[2]!==false,hours:hrs(it[3])})));}
@@ -105,7 +109,7 @@ function recDone_(){stream.getTracks().forEach(t=>t.stop());const secs=Math.roun
 if(secs<1||!blob.size){V={state:'err',err:'Too short. Tap the mic, speak, then tap it again.'};vLine();return}
 const token=newToken();V={state:'up',token:token,url:URL.createObjectURL(blob),sec:secs,err:''};vLine();
 upload=new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]||'');r.onerror=no;r.readAsDataURL(blob)})
-.then(b64=>api({api:'voice',token:token,room:ROOM,mime:mime,seconds:secs,b64:b64}).catch(e=>vVerify(token,e)))
+.then(b64=>api({api:'voice',token:token,room:ROOM,k:KEY,mime:mime,seconds:secs,b64:b64}).catch(e=>vVerify(token,e)))
 .then(()=>{if(V.token===token){V.state='ok';vLine()}return token})
 .catch(x=>{if(V.token===token){V={state:'err',err:'Voice note not saved ('+x.message+'). Tap the mic to try again.'};vLine()}return ''});}
 // iPhone Safari sometimes can't read the upload reply even though the note was saved: ask the server.
@@ -115,20 +119,58 @@ function bindMic(){const b=$('#vRec');if(!b)return;b.addEventListener('click',mi
 function openCart(){const{c,t}=totals();let h='<h3 style="margin:0 0 6px">Your order'+(ROOM?' · Room '+ROOM:'')+'</h3>';
 for(const k in cart){const x=cart[k];h+='<div class="row"><div class="l">'+esc(x.name)+'<div style="color:var(--mute);font-size:12px">'+rs(x.price)+' each</div></div><div class="qty"><button data-m="'+k+'">−</button><span>'+x.qty+'</span><button data-p="'+k+'">+</button></div><div style="min-width:64px;text-align:right;font-weight:600">'+rs(x.qty*x.price)+'</div></div>'}
 const keep=$('#notes')?$('#notes').value:'';
-h+='<div class="row"><span>Total items</span><b>'+c+'</b></div><div class="tot"><span>Grand Total</span><span>'+rs(t)+'</span></div>'+
+h+='<div class="row"><span>Total items</span><b>'+c+'</b></div><div class="tot"><span>'+(PAY?'Food total':'Grand Total')+'</span><span>'+rs(t)+'</span></div>'+
 '<div class="nwrap"><textarea id="notes" rows="2" maxlength="200" placeholder="Cooking notes (less spicy, no onion…)"></textarea>'+
 (CAN_REC?'<button class="micb" id="vRec" aria-label="Tap to start or stop a voice note">'+MIC_SVG+'</button>':'')+'</div><div class="vline" id="vline"></div>'+
-'<button class="btn" id="place">Place Order · '+rs(t)+'</button><button class="btn ghost" id="more">Add more items</button><div class="note">Taxes, if any, are added on the final bill</div>';
+(PAY?'<button class="btn" id="place">Pay · see bill with GST</button><button class="btn ghost" id="more">Add more items</button><div class="note">GST is shown on the next screen. Your order goes to the kitchen only after payment.</div>':'<button class="btn" id="place">Place Order · '+rs(t)+'</button><button class="btn ghost" id="more">Add more items</button><div class="note">Taxes, if any, are added on the final bill</div>');
 $('#box').innerHTML=h;$('#notes').value=keep;$('#sheet').style.display='flex';$('#place').onclick=place;$('#more').onclick=closeCart;bindMic();}
 async function place(){const b=$('#place');if(!ROOM){b.insertAdjacentHTML('afterend','<div class="note" style="color:var(--brand)">Please scan the QR code in your room.</div>');return}
 if(V.state==='rec'){b.disabled=true;b.textContent='Saving voice note…';await new Promise(ok=>{afterStop=ok;setTimeout(()=>{if(afterStop===ok){afterStop=null;ok()}},8000);recStop()});b.disabled=false}
 const items=Object.values(cart).map(x=>({name:x.name,qty:x.qty}));const notes=$('#notes').value;const{t}=totals();
-b.disabled=true;b.textContent='Placing order…';
+b.disabled=true;b.textContent=PAY?'Calculating bill…':'Placing order…';
 let voice='';if(upload&&(V.state==='up'||V.state==='ok'))voice=await upload;
+if(PAY){ // prices + GST come from the server (menu sheet). The page never sends prices.
+api({api:'quote',room:ROOM,k:KEY,items:items}).then(q=>payScreen(q,items,notes,voice))
+.catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note" style="color:var(--brand)">'+esc(err.message)+'</div>')});return}
 api({api:'order',room:ROOM,items:items,notes:notes,voice:voice}).then(j=>{const id=j.orderNo;
 for(const k in cart)delete cart[k];V={state:'idle',token:'',url:'',sec:0,err:''};upload=null;render();
 $('#box').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:44px">✅</div><h3>Order placed!</h3><p>Room '+ROOM+' · Order #'+esc(id)+'<br>Grand total '+rs(t)+'</p><p class="note">The kitchen has your order. Please allow about 30 minutes.</p><button class="btn" id="dn">Done</button></div>';$('#dn').onclick=closeCart})
 .catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note" style="color:var(--brand)">'+esc(err.message)+'</div>')});}
+
+// ---- Pay first (PayU). Server signs the payment; the order goes to the kitchen only after PayU confirms. ----
+const rs2=n=>'₹'+Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+function payScreen(q,items,notes,voice){const half=q.gstRate/2;
+let h='<h3 style="margin:0 0 6px">Your bill · Room '+esc(q.room)+'</h3>';
+q.lines.forEach(l=>{h+='<div class="row"><div class="l">'+esc(l.name)+' × '+l.qty+'</div><div style="font-weight:600">'+rs2(l.amount)+'</div></div>'});
+h+='<div class="row"><span>Food total</span><b>'+rs2(q.food)+'</b></div>'+
+'<div class="row"><span>CGST '+half+'%</span><span>'+rs2(q.cgst)+'</span></div>'+
+'<div class="row"><span>SGST '+half+'%</span><span>'+rs2(q.sgst)+'</span></div>'+
+'<div class="tot"><span>Total to pay</span><span>'+rs2(q.total)+'</span></div>'+
+'<button class="btn" id="payBtn">Proceed to pay '+rs2(q.total)+'</button><button class="btn ghost" id="back">Back</button>'+
+'<div class="note">Secure payment by PayU · UPI, cards, net banking. Your order goes to the kitchen after payment.</div>';
+$('#box').innerHTML=h;$('#back').onclick=openCart;
+$('#payBtn').onclick=()=>{const b=$('#payBtn');const g=getGuest()||{};b.disabled=true;b.textContent='Opening payment…';
+api({api:'payStart',room:ROOM,k:KEY,items:items,notes:notes,voice:voice,name:g.name||'',phone:g.phone||''},0).then(j=>{
+if(!/^https:\/\/(secure|test)\.payu\.in\/_payment$/.test(j.action))throw new Error('Payment setup error. Please call reception.');
+// Browsers only allow leaving the page on a real tap: show a form button (no auto-submit).
+const f=document.createElement('form');f.method='POST';f.action=j.action;f.target='_top';
+for(const n in j.fields){const i=document.createElement('input');i.type='hidden';i.name=n;i.value=j.fields[n];f.appendChild(i)}
+const s=document.createElement('button');s.type='submit';s.className='btn';s.textContent='Continue to secure payment · '+rs2(j.total);f.appendChild(s);
+b.replaceWith(f);s.focus()})
+.catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note" style="color:var(--brand)">'+esc(err.message)+'</div>')})};}
+// Back from PayU (?txn=...): ask the server (it checks with PayU) until the order is confirmed or failed.
+function payResult(){if(!TXN||!ROOM)return;$('#sheet').style.display='flex';
+$('#box').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:44px">⏳</div><h3>Confirming your payment…</h3><p class="note">Please do not close this page.</p></div>';
+let n=0;const show=(icon,title,body)=>{$('#box').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:44px">'+icon+'</div><h3>'+title+'</h3><p>'+body+'</p><button class="btn" id="dn">Back to menu</button></div>';$('#dn').onclick=()=>{closeCart();try{history.replaceState(null,'',location.pathname+'?room='+encodeURIComponent(ROOM)+(KEY?'&k='+encodeURIComponent(KEY):''))}catch(e){}}};
+const chk=()=>api({api:'payStatus',room:ROOM,k:KEY,txnid:TXN}).then(j=>{
+if(j.status==='ORDERED'){for(const k in cart)delete cart[k];render();return show('✅','Payment successful','Paid '+rs2(j.total)+' (incl. GST)<br>Room '+esc(ROOM)+' · Order #'+esc(j.orderNo)+'<br><span class="note">The kitchen has your order. Please allow about 30 minutes.</span>')}
+if(j.status==='CHECK MANUALLY')return show('🕑','Payment received','Our team will confirm your order shortly. If you do not hear back in 10 minutes, please call reception.');
+const why=j.reason?'<br><b>Reason:</b> '+esc(j.reason):'';
+if(j.status==='FAILED')return show('❌','Payment failed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">You can try again. If money was deducted, your bank returns it automatically.</span>');
+if(j.status==='EXPIRED')return show('⏱️','Payment not completed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">You can try again.</span>');
+if(++n<40)return new Promise(z=>setTimeout(z,3000)).then(chk);
+show('🕑','Still confirming','Your payment is still being confirmed. Please call reception if your order does not arrive.')})
+.catch(e=>show('⚠️','Could not check payment',esc(e.message)+'<br>Please call reception if your order does not arrive.'));chk();}
 
 // ---- Guest login (name + phone), once per phone for 24h ----
 const GKEY='qrGuest';
@@ -137,12 +179,13 @@ $('#gGo').onclick=()=>{const n=$('#gName').value.trim(),p=$('#gPhone').value.rep
 if(n.length<2){err.textContent='Please enter your name.';return}
 if(!/^[6-9]\d{9}$/.test(p)){err.textContent='Please enter a valid 10-digit mobile number.';return}
 b.disabled=true;b.textContent='Please wait…';
-api({api:'login',name:n,phone:p,room:ROOM}).then(()=>{try{localStorage.setItem(GKEY,JSON.stringify({name:n,phone:p,ts:Date.now()}))}catch(e){}$('#login').style.display='none'})
+api({api:'login',name:n,phone:p,room:ROOM,k:KEY}).then(()=>{try{localStorage.setItem(GKEY,JSON.stringify({name:n,phone:p,ts:Date.now()}))}catch(e){}$('#login').style.display='none'})
 .catch(e=>{b.disabled=false;b.textContent='Continue to menu';err.textContent=e.message||'Could not save. Please try again.'});};
 if(!getGuest())$('#login').style.display='flex';
 
 $('#list').innerHTML='<div class="empty">Loading menu…</div>';
 function loadMenu(rows){const by={};const order=[];(rows||[]).forEach(r=>{if(!r.name||!(r.price>0))return;const c=r.category||'Other';if(!by[c]){by[c]=[];order.push(c)}by[c].push([r.name,r.price,r.open!==false,r.hours||''])});
 MENU=order.map(c=>({cat:c,items:by[c]}));buildAll();drawTabs();render();}
-api({api:'menuTimed'}).catch(()=>api({api:'menu'})).then(j=>loadMenu(j.menu)).catch(()=>{$('#list').innerHTML='<div class="empty">Menu could not load. Please call reception.</div>'});
+const payModeP=ROOM?api({api:'payMode',room:ROOM}).then(j=>{PAY=!!j.pay}).catch(()=>{}):Promise.resolve();
+api({api:'menuTimed'}).catch(()=>api({api:'menu'})).then(j=>{loadMenu(j.menu);return payModeP}).then(()=>{render();payResult()}).catch(()=>{$('#list').innerHTML='<div class="empty">Menu could not load. Please call reception.</div>'});
 </script></body></html>
