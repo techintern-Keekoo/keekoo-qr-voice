@@ -152,6 +152,7 @@ $('#box').innerHTML=h;$('#back').onclick=openCart;
 $('#payBtn').onclick=()=>{const b=$('#payBtn');const g=getGuest()||{};b.disabled=true;b.textContent='Opening payment…';
 api({api:'payStart',room:ROOM,k:KEY,items:items,notes:notes,voice:voice,name:g.name||'',phone:g.phone||''},0).then(j=>{
 if(!/^https:\/\/(secure|test)\.payu\.in\/_payment$/.test(j.action))throw new Error('Payment setup error. Please call reception.');
+try{localStorage.setItem('qrCart',JSON.stringify({room:ROOM,txn:j.txnid,items:Object.values(cart).map(x=>({name:x.name,qty:x.qty}))}))}catch(e){} // refill the cart if payment fails
 // Browsers only allow leaving the page on a real tap: show a form button (no auto-submit).
 const f=document.createElement('form');f.method='POST';f.action=j.action;f.target='_top';
 for(const n in j.fields){const i=document.createElement('input');i.type='hidden';i.name=n;i.value=j.fields[n];f.appendChild(i)}
@@ -161,13 +162,17 @@ b.replaceWith(f);s.focus()})
 // Back from PayU (?txn=...): ask the server (it checks with PayU) until the order is confirmed or failed.
 function payResult(){if(!TXN||!ROOM)return;$('#sheet').style.display='flex';
 $('#box').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:44px">⏳</div><h3>Confirming your payment…</h3><p class="note">Please do not close this page.</p></div>';
-let n=0;const show=(icon,title,body)=>{$('#box').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:44px">'+icon+'</div><h3>'+title+'</h3><p>'+body+'</p><button class="btn" id="dn">Back to menu</button></div>';$('#dn').onclick=()=>{closeCart();try{history.replaceState(null,'',location.pathname+'?room='+encodeURIComponent(ROOM)+(KEY?'&k='+encodeURIComponent(KEY):''))}catch(e){}}};
+let n=0;const toMenu=()=>{clearTimeout(window.__back);closeCart();try{history.replaceState(null,'',location.pathname+'?room='+encodeURIComponent(ROOM)+(KEY?'&k='+encodeURIComponent(KEY):''))}catch(e){}};
+const show=(icon,title,body,auto)=>{$('#box').innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:44px">'+icon+'</div><h3>'+title+'</h3><p>'+body+'</p>'+(auto?'<p class="note">Going back to the menu…</p>':'')+'<button class="btn" id="dn">Back to menu</button></div>';$('#dn').onclick=toMenu;if(auto)window.__back=setTimeout(toMenu,4000)};
+const saved=()=>{try{const c=JSON.parse(localStorage.getItem('qrCart')||'null');return c&&c.room===ROOM&&c.txn===TXN?c:null}catch(e){return null}};
+const refill=()=>{const c=saved();if(!c)return;for(const k in cart)delete cart[k];c.items.forEach(x=>{const it=all.find(i=>i.name===x.name);if(it)cart[it.id]={name:it.name,price:it.price,qty:x.qty}});render()};
+const forget=()=>{try{localStorage.removeItem('qrCart')}catch(e){}};
 const chk=()=>api({api:'payStatus',room:ROOM,k:KEY,txnid:TXN}).then(j=>{
-if(j.status==='ORDERED'){for(const k in cart)delete cart[k];render();return show('✅','Payment successful','Paid '+rs2(j.total)+' (incl. GST)<br>Room '+esc(ROOM)+' · Order #'+esc(j.orderNo)+'<br><span class="note">The kitchen has your order. Please allow about 30 minutes.</span>')}
-if(j.status==='CHECK MANUALLY')return show('🕑','Payment received','Our team will confirm your order shortly. If you do not hear back in 10 minutes, please call reception.');
+if(j.status==='ORDERED'){forget();for(const k in cart)delete cart[k];render();return show('✅','Payment successful','Paid '+rs2(j.total)+' (incl. GST)<br>Room '+esc(ROOM)+' · Order #'+esc(j.orderNo)+'<br><span class="note">The kitchen has your order. Please allow about 30 minutes.</span>',true)}
+if(j.status==='CHECK MANUALLY'){forget();return show('🕑','Payment received','Our team will confirm your order shortly. If you do not hear back in 10 minutes, please call reception.',true)}
 const why=j.reason?'<br><b>Reason:</b> '+esc(j.reason):'';
-if(j.status==='FAILED')return show('❌','Payment failed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">You can try again. If money was deducted, your bank returns it automatically.</span>');
-if(j.status==='EXPIRED')return show('⏱️','Payment not completed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">You can try again.</span>');
+if(j.status==='FAILED'){refill();forget();return show('❌','Payment failed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">You can try again. If money was deducted, your bank returns it automatically. Your items are still in the cart.</span>',true)}
+if(j.status==='EXPIRED'){refill();forget();return show('⏱️','Payment not completed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">Your items are still in the cart. You can try again.</span>',true)}
 if(++n<40)return new Promise(z=>setTimeout(z,3000)).then(chk);
 show('🕑','Still confirming','Your payment is still being confirmed. Please call reception if your order does not arrive.')})
 .catch(e=>show('⚠️','Could not check payment',esc(e.message)+'<br>Please call reception if your order does not arrive.'));chk();}
