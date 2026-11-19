@@ -77,6 +77,21 @@ header>*{animation:rise .25s ease-out both}header h1{animation-delay:.05s}.chips
 .res h3,.res p,.res .btn{animation:rise .22s .1s ease-out both}
 .search input:focus,textarea:focus,.lbox input:focus{outline:2px solid var(--gold);outline-offset:1px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.ck{margin:0 -18px calc(-18px - env(safe-area-inset-bottom));background:#1F1E1C;color:#F1EFE8;text-align:center;padding:22px 18px 18px;padding-bottom:calc(18px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0}
+.ck .ey{font-size:11px;letter-spacing:2px;color:#C9A55C;margin:0}.ck h3{font-family:var(--serif);font-weight:500;font-size:24px;margin:6px 0 2px;color:#F1EFE8}
+.ck .sub{font-size:12px;color:#B4B2A9;margin:0}.ck .msg{font-size:13px;color:#B4B2A9;margin:0 0 12px;line-height:1.5}
+.ck .lb{font-size:11px;letter-spacing:1.5px;color:#888780;margin:0}.ck .tm{font-size:32px;font-weight:600;color:#E8C77A;margin:2px 0 12px;font-variant-numeric:tabular-nums}
+.ck .st{display:flex;align-items:flex-start;font-size:11px;margin-bottom:14px}.ck .st>div{flex:1}.ck .st i{display:block;width:14px;height:1px;margin-top:10px;flex:0 0 14px}
+.ck .st svg{width:18px;height:18px;display:block;margin:0 auto 3px}.ck .on{color:#C9A55C}.ck .now{color:#E8C77A;font-weight:600}.ck .off{color:#5F5E5A}
+.ck .cb{width:100%;background:transparent;color:#E8C77A;border:1px solid #C9A55C;border-radius:12px;padding:12px;font:inherit;font-weight:600}
+@keyframes ckLid{0%,55%,100%{transform:translateY(0) rotate(0)}70%,85%{transform:translateY(-14px) rotate(-8deg)}}
+@keyframes ckSt{0%{opacity:0;transform:translateY(0)}30%{opacity:.8}100%{opacity:0;transform:translateY(-30px)}}
+@keyframes ckSp{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:1;transform:scale(1)}}
+@keyframes ckSpin{to{transform:rotate(360deg)}}
+.ck .lid{animation:ckLid 4s ease-in-out infinite;transform-origin:150px 128px;transform-box:view-box}
+.ck .stm{animation:ckSt 4s ease-out infinite;opacity:0}.ck .spk{animation:ckSp 2.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.ck .orb{animation:ckSpin 6s linear infinite;transform-origin:120px 120px;transform-box:view-box}
+@media (prefers-reduced-motion:reduce){.ck *{animation:none!important}}
 </style></head><body>
 <header><div class="brand">ZEN MANALI · BY KEEKOO STAYS</div><h1 id="title">In-Room <em>Dining</em></h1><div class="chips"><span class="chip" id="roomTag"></span><span class="chip" id="eta">Delivered in ~30 min</span></div>
 <svg class="mtn" viewBox="0 0 400 46" preserveAspectRatio="none" aria-hidden="true"><path d="M0 46 L0 30 L48 12 L86 28 L132 4 L178 26 L214 14 L262 32 L306 8 L350 26 L400 16 L400 46Z" fill="rgba(255,255,255,.06)"/><path d="M0 46 L0 38 L60 24 L110 36 L170 20 L230 36 L290 22 L346 36 L400 28 L400 46Z" fill="rgba(200,161,90,.10)"/></svg></header>
@@ -184,7 +199,7 @@ api({api:'quote',room:ROOM,k:KEY,items:items}).then(q=>payScreen(q,items,notes,v
 .catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note err">'+esc(err.message)+'</div>')});return}
 api({api:'order',room:ROOM,items:items,notes:notes,voice:voice}).then(j=>{const id=j.orderNo;
 for(const k in cart)delete cart[k];V={state:'idle',token:'',url:'',sec:0,err:''};upload=null;render();
-$('#box').innerHTML='<div class="res">'+ic('ok')+'<h3>Order placed!</h3><p>'+PLACE+' · Order #'+esc(id)+'<br>Grand total '+rs(t)+'</p><p class="note">The kitchen has your order. Please allow about 30 minutes.</p><button class="btn" id="dn">Done</button></div>';$('#dn').onclick=closeCart})
+cookScreen(id,'Grand total '+rs(t),closeCart)})
 .catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note err">'+esc(err.message)+'</div>')});}
 
 // ---- Pay first (PayU). Server signs the payment; the order goes to the kitchen only after PayU confirms. ----
@@ -210,6 +225,33 @@ const s=document.createElement('button');s.type='submit';s.className='btn';s.inn
 b.replaceWith(f);const st=$('#box .steps');if(st)st.outerHTML=steps(3);s.focus()})
 .catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note err">'+esc(err.message)+'</div>')})};}
 // Back from PayU (?txn=...): ask the server (it checks with PayU) until the order is confirmed or failed.
+// ---- Cooking screen after order is confirmed (25-30 min countdown) ----
+function cookScreen(orderNo,line,done){clearInterval(window.__ck);
+const k='qrCook_'+orderNo;let t0=+localStorage.getItem(k)||0;if(!t0){t0=Date.now();try{localStorage.setItem(k,t0)}catch(e){}}
+const T=30*60e3,ic=(d)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
+const steam=(x,d)=>'<path class="stm" d="M'+x+' 118 q-5 -9 0 -18 q5 -9 0 -18" style="animation-delay:'+d+'s"/>';
+const spk=(x,y,r,d)=>'<path class="spk" d="M'+x+' '+y+' l'+r*.4+' '+r+' '+r+' '+r*.4+' -'+r+' '+r*.4+' -'+r*.4+' '+r+' -'+r*.4+' -'+r+' -'+r+' -'+r*.4+' '+r+' -'+r*.4+'z" fill="#E8C77A" style="animation-delay:'+d+'s"/>';
+$('#box').innerHTML='<div class="ck"><p class="ey">ZEN MANALI · KEEKOO STAYS</p><h3>Order confirmed</h3><p class="sub">'+esc(PLACE)+' · #'+esc(orderNo)+(line?'<br>'+line:'')+'</p>'+
+'<svg viewBox="0 0 240 240" width="210" style="display:block;margin:8px auto 0" aria-hidden="true"><circle cx="120" cy="120" r="104" fill="none" stroke="#3A3935" stroke-width="3"/>'+
+'<circle id="ckRing" cx="120" cy="120" r="104" fill="none" stroke="#C9A55C" stroke-width="3" stroke-linecap="round" stroke-dasharray="653" stroke-dashoffset="653" transform="rotate(-90 120 120)" style="transition:stroke-dashoffset 1s"/>'+
+'<g class="orb"><circle cx="120" cy="16" r="4" fill="#E8C77A"/></g><circle cx="120" cy="120" r="88" fill="#26251F"/>'+
+'<g fill="none" stroke="#D3D1C7" stroke-width="2" stroke-linecap="round">'+steam(104,2.7)+steam(120,2.9)+steam(136,3.1)+'</g>'+
+'<ellipse cx="120" cy="150" rx="62" ry="10" fill="#F1EFE8"/><ellipse cx="120" cy="148" rx="46" ry="6" fill="#D3D1C7"/>'+
+'<circle cx="108" cy="143" r="5" fill="#D85A30"/><circle cx="122" cy="141" r="5" fill="#639922"/><circle cx="134" cy="144" r="4" fill="#EF9F27"/>'+
+'<g class="lid"><path d="M66 146 a54 50 0 0 1 108 0 z" fill="#B4B2A9"/><path d="M78 140 a44 42 0 0 1 30 -36" fill="none" stroke="#F1EFE8" stroke-width="4" stroke-linecap="round" opacity=".7"/>'+
+'<rect x="62" y="144" width="116" height="5" rx="2.5" fill="#888780"/><circle cx="120" cy="92" r="7" fill="#C9A55C"/></g>'+
+spk(186,72,7,0)+spk(52,96,5,.8)+spk(178,170,5,1.6)+'</svg>'+
+'<h3 style="font-size:20px;margin-top:8px">Freshly cooking, just for you</h3><p class="msg">Our kitchen is preparing your meal now. Sit back and relax — we\'ll bring it to your room in 25–30 min.</p>'+
+'<p class="lb">AT YOUR DOOR IN</p><div class="tm" id="ckT">30:00</div>'+
+'<div class="st"><div class="on">'+ic('<path d="M5 12l5 5L20 7"/>')+'Confirmed</div><i style="background:#C9A55C"></i>'+
+'<div class="now">'+ic('<path d="M12 3a4 4 0 0 1 4 3a4 4 0 0 1 2 7.5V20H6v-6.5A4 4 0 0 1 8 6a4 4 0 0 1 4-3z"/><path d="M6 17h12"/>')+'Preparing</div><i style="background:#444441"></i>'+
+'<div class="off">'+ic('<path d="M4 15h16M6 15a6 6 0 0 1 12 0M12 7V5M3 19h18"/>')+'On its way</div><i style="background:#444441"></i>'+
+'<div class="off">'+ic('<path d="M14 3H6v18h8M14 3l5 2v14l-5 2zM11 12v.01"/>')+'At your door</div></div>'+
+'<button class="cb" id="dn">Back to menu</button></div>';
+$('#dn').onclick=()=>{clearInterval(window.__ck);done()};
+const tick=()=>{const t=document.getElementById('ckT');if(!t)return clearInterval(window.__ck);const left=Math.max(0,T-(Date.now()-t0)),s=Math.ceil(left/1e3);
+t.textContent=left?String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'):'Any moment now';
+document.getElementById('ckRing').setAttribute('stroke-dashoffset',Math.round(653*left/T))};tick();window.__ck=setInterval(tick,1000)}
 function payResult(){if(!TXN||!ROOM)return;$('#sheet').style.display='flex';
 $('#box').innerHTML='<div class="res">'+ic('spin')+'<h3>Confirming your payment…</h3><p class="note">Please do not close this page.</p></div>';
 let n=0;const toMenu=()=>{clearTimeout(window.__back);closeCart();try{history.replaceState(null,'',location.pathname+'?room='+encodeURIComponent(ROOM)+(KEY?'&k='+encodeURIComponent(KEY):''))}catch(e){}};
@@ -218,7 +260,7 @@ const saved=()=>{try{const c=JSON.parse(localStorage.getItem('qrCart')||'null');
 const refill=()=>{const c=saved();if(!c)return;for(const k in cart)delete cart[k];c.items.forEach(x=>{const it=all.find(i=>i.name===x.name);if(it)cart[it.id]={name:it.name,price:it.price,qty:x.qty}});render()};
 const forget=()=>{try{localStorage.removeItem('qrCart')}catch(e){}};
 const chk=()=>api({api:'payStatus',room:ROOM,k:KEY,txnid:TXN}).then(j=>{
-if(j.status==='ORDERED'){forget();for(const k in cart)delete cart[k];render();return show('ok','Payment received','Paid '+rs2(j.total)+' (incl. GST)<br>'+esc(PLACE)+' · Order #'+esc(j.orderNo)+'<br><span class="note">The kitchen has your order. Please allow about 30 minutes.</span>',true)}
+if(j.status==='ORDERED'){forget();for(const k in cart)delete cart[k];render();return cookScreen(j.orderNo,'Paid '+rs2(j.total)+' (incl. GST)',toMenu)}
 if(j.status==='CHECK MANUALLY'){forget();return show('wait','Payment received','Our team will confirm your order shortly. If you do not hear back in 10 minutes, please call reception.',true)}
 const why=j.reason?'<br><b>Reason:</b> '+esc(j.reason):'';
 if(j.status==='FAILED'){refill();forget();return show('bad','Payment not completed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">If money was deducted, your bank returns it automatically. Your items are still in the cart.</span>',true,true)}
