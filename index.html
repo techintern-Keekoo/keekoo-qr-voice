@@ -226,7 +226,7 @@ b.replaceWith(f);const st=$('#box .steps');if(st)st.outerHTML=steps(3);s.focus()
 .catch(err=>{b.disabled=false;b.textContent='Try again';b.insertAdjacentHTML('afterend','<div class="note err">'+esc(err.message)+'</div>')})};}
 // Back from PayU (?txn=...): ask the server (it checks with PayU) until the order is confirmed or failed.
 // ---- Cooking screen after order is confirmed (25-30 min countdown) ----
-function cookScreen(orderNo,line,done){clearInterval(window.__ck);const TBL=PLACE[0]==='T';
+function cookScreen(orderNo,line,done,trackDelivery){clearInterval(window.__ck);const TBL=PLACE[0]==='T';
 const k='qrCook_'+orderNo;let t0=+localStorage.getItem(k)||0;if(!t0){t0=Date.now();try{localStorage.setItem(k,t0)}catch(e){}}
 const T=30*60e3,ic=(d)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
 const steam=(x,d)=>'<path class="stm" d="M'+x+' 118 q-5 -9 0 -18 q5 -9 0 -18" style="animation-delay:'+d+'s"/>';
@@ -248,8 +248,42 @@ spk(186,72,7,0)+spk(52,96,5,.8)+spk(178,170,5,1.6)+'</svg>'+
 '<div class="off">'+ic('<path d="M4 15h16M6 15a6 6 0 0 1 12 0M12 7V5M3 19h18"/>')+'On its way</div><i style="background:#444441"></i>'+
 '<div class="off">'+ic('<path d="M14 3H6v18h8M14 3l5 2v14l-5 2zM11 12v.01"/>')+(TBL?'At your table':'At your door')+'</div></div>'+
 '<button class="cb" id="dn">Back to menu</button></div>';
-$('#dn').onclick=()=>{clearInterval(window.__ck);done()};
-const tick=()=>{const t=document.getElementById('ckT');if(!t)return clearInterval(window.__ck);const left=Math.max(0,T-(Date.now()-t0)),s=Math.ceil(left/1e3);
+const tracker = $('#box .ck');
+const title = tracker.querySelectorAll('h3')[1];
+const message = tracker.querySelector('.msg');
+const steps = [...tracker.querySelectorAll('.st > div')];
+const titles = ['Waiting for the kitchen', title.textContent, 'On its way', TBL ? 'At your table' : 'At your door'];
+const descriptions = ['Your order has reached the kitchen.', message.textContent, 'Your waiter has picked up the full order.', 'Estimated arrival based on pickup.'];
+let stage = 0, arrivesAt = 0, pollTimer;
+function showStage(next) {
+  stage = next;
+  title.textContent = titles[next];
+  message.textContent = descriptions[next];
+  steps.forEach((step, i) => {
+    step.className = i < next ? 'on' : i === next ? 'now' : 'off';
+    if (i === next) step.setAttribute('aria-current', 'step');
+    else step.removeAttribute('aria-current');
+  });
+}
+const showing = () => tracker.isConnected && $('#sheet').style.display !== 'none';
+async function checkDelivery() {
+  if (!showing()) return;
+  try {
+    const result = await api({api:'payStatus', room:ROOM, k:KEY, txnid:TXN, deliveryOnly:true}, 0);
+    if (!showing()) return;
+    const progress = result.delivery;
+    if (progress && progress.stage === 'ON_ITS_WAY' && Number(progress.pickedAt) > 0) {
+      arrivesAt = Number(progress.pickedAt) + 5 * 60e3;
+      showStage(Date.now() >= arrivesAt ? 3 : 2);
+      return;
+    }
+    if (progress && progress.stage === 'PREPARING' && stage === 0) showStage(1);
+  } catch (e) {}
+  if (showing()) pollTimer = setTimeout(checkDelivery, 8000);
+}
+if (trackDelivery) { showStage(0); checkDelivery(); }
+$('#dn').onclick=()=>{clearInterval(window.__ck);clearTimeout(pollTimer);done()};
+const tick=()=>{if(arrivesAt && stage===2 && Date.now()>=arrivesAt) showStage(3);const t=document.getElementById('ckT');if(!t)return clearInterval(window.__ck);const left=Math.max(0,T-(Date.now()-t0)),s=Math.ceil(left/1e3);
 t.textContent=left?String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'):'Any moment now';
 document.getElementById('ckRing').setAttribute('stroke-dashoffset',Math.round(653*left/T))};tick();window.__ck=setInterval(tick,1000)}
 function payResult(){if(!TXN||!ROOM)return;$('#sheet').style.display='flex';
@@ -260,7 +294,7 @@ const saved=()=>{try{const c=JSON.parse(localStorage.getItem('qrCart')||'null');
 const refill=()=>{const c=saved();if(!c)return;for(const k in cart)delete cart[k];c.items.forEach(x=>{const it=all.find(i=>i.name===x.name);if(it)cart[it.id]={name:it.name,price:it.price,qty:x.qty}});render()};
 const forget=()=>{try{localStorage.removeItem('qrCart')}catch(e){}};
 const chk=()=>api({api:'payStatus',room:ROOM,k:KEY,txnid:TXN}).then(j=>{
-if(j.status==='ORDERED'){forget();for(const k in cart)delete cart[k];render();return cookScreen(j.orderNo,'Paid '+rs2(j.total)+' (incl. GST)',toMenu)}
+if(j.status==='ORDERED'){forget();for(const k in cart)delete cart[k];render();return cookScreen(j.orderNo,'Paid '+rs2(j.total)+' (incl. GST)',toMenu,true)}
 if(j.status==='CHECK MANUALLY'){forget();return show('wait','Payment received','Our team will confirm your order shortly. If you do not hear back in 10 minutes, please call reception.',true)}
 const why=j.reason?'<br><b>Reason:</b> '+esc(j.reason):'';
 if(j.status==='FAILED'){refill();forget();return show('bad','Payment not completed','Your order was NOT sent to the kitchen.'+why+'<br><span class="note">If money was deducted, your bank returns it automatically. Your items are still in the cart.</span>',true,true)}
